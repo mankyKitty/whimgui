@@ -1,7 +1,6 @@
 module Main (main) where
 
--- import qualified Lib
-import qualified OpenGLExample
+import qualified GLAttempt
 
 main :: IO ()
-main = OpenGLExample.main
+main = GLAttempt.main

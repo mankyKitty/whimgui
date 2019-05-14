@@ -30,18 +30,17 @@ escOrQuit (SDL.Event _ evt) = isAQuit evt
       SDL.KeyboardEvent (SDL.KeyboardEventData _ _ _ (SDL.Keysym _ SDL.KeycodeEscape _)) -> True
       _                                                                                  -> False
 
-
 main :: IO ()
 main = do
+  fragSrc <- BS.readFile "shaders/foo.frag"
   -- fragSrc <- BS.readFile "shaders/first_raymarch.frag"
-  fragSrc <- BS.readFile "shaders/sigh.frag"
   vertSrc <- BS.readFile "shaders/basic.vert"
 
   SDL.initialize [SDL.InitVideo]
-  SDL.HintRenderScaleQuality $= SDL.ScaleLinear
-  do renderQuality <- SDL.get SDL.HintRenderScaleQuality
-     when (renderQuality /= SDL.ScaleLinear) $
-       putStrLn "Warning: Linear texture filtering not enabled!"
+  -- SDL.HintRenderScaleQuality $= SDL.ScaleLinear
+  -- do renderQuality <- SDL.get SDL.HintRenderScaleQuality
+  --    when (renderQuality /= SDL.ScaleLinear) $
+  --      putStrLn "Warning: Linear texture filtering not enabled!"
 
   window <-
     SDL.createWindow
@@ -101,7 +100,7 @@ initResources fsSource vsSource = do
   GL.attachShader program vs
   GL.attachShader program fs
 
-  uniResolution <- GL.uniformLocation program "iResolution"
+  uResolution <- GL.uniformLocation program "uResolution"
   GL.attribLocation program "coord2d" $= GL.AttribLocation 0
 
   GL.linkProgram program
@@ -113,31 +112,40 @@ initResources fsSource vsSource = do
     plog <- GL.get $ GL.programInfoLog program
     putStrLn plog
     exitFailure
+
   GL.currentProgram $= Just program
 
-  return (program, GL.AttribLocation 0, uniResolution)
+  return (program, GL.AttribLocation 0, uResolution)
 
 draw :: GL.Program -> GL.AttribLocation -> GL.UniformLocation -> IO ()
-draw program attrib iResolution = do
+draw program attrib uResolution = do
     GL.clear [GL.ColorBuffer]
+
     GL.viewport $= (GL.Position 0 0, GL.Size (fromIntegral screenWidth) (fromIntegral screenHeight))
 
-    GL.uniform iResolution $= (GL.Vector3 640 480 0 :: GL.Vector3 GL.GLint)
     GL.currentProgram $= Just program
 
+    GL.uniform uResolution $=
+      (GL.Vector2 (fromIntegral screenWidth) (fromIntegral screenHeight) :: GL.Vector2 GL.GLint)
+
     GL.vertexAttribArray attrib $= GL.Enabled
-    V.unsafeWith vertices $ \ptr ->
-        GL.vertexAttribPointer attrib $=
-          (GL.ToFloat, GL.VertexArrayDescriptor 2 GL.Float 0 ptr)
+    V.unsafeWith quad $ \ptr ->
+      GL.vertexAttribPointer attrib $= (GL.ToFloat, GL.VertexArrayDescriptor 2 GL.Float 0 ptr)
 
-    GL.drawArrays GL.Triangles 0 4
-
+    GL.drawArrays GL.Quads 0 4
     GL.vertexAttribArray attrib $= GL.Disabled
 
-vertices :: V.Vector Float
-vertices = V.fromList
-  [ -1.0, -1.0,
-    -1.0,  1.0,
-    0.0, -1.0,
-    0.0,  1.0
+quad :: V.Vector Float
+quad = V.fromList
+  [ -1.0,  1.0
+  ,  1.0,  1.0
+  , -1.0, -1.0
+  ,  1.0, -1.0
   ]
+
+-- tri :: V.Vector Float
+-- tri = V.fromList
+--   [ 0.0, 2.0
+--   , -2.0, -2.0
+--   , 2.0, -2.0
+--   ]

@@ -72,7 +72,8 @@ vec3 rayDirection(float fieldOfView, vec2 size, vec2 fragCoord) {
 }
 
 void main() {
-  vec3 dir = rayDirection(45.0, iResolution.xy, gl_FragCoord.xy);
+  vec2 uv  = gl_FragCoord.xy / iResolution.yy;
+  vec3 dir = rayDirection(45.0, iResolution.xy, uv);
   vec3 eye = vec3(0.0, 0.0, 5.0);
 
   float dist = shortestDistanceToSurface(eye, dir, MIN_DIST, MAX_DIST);
